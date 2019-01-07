@@ -27,7 +27,7 @@ class User(Base):
     name = Column(String(40), nullable=False)
     email = Column(String(254), unique=True, nullable=False)
     picture = Column(String(250))
-    user_items = relationship("CategoryItem")
+    # user_items = relationship("CategoryItem")
 
     @property
     def serialize(self):
