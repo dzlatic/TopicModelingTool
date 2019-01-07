@@ -1,0 +1,31 @@
+{% extends "main.html" %}
+{% block content %}
+  <div class="row" style="background-color: rgb(200, 200, 200); height:500px">
+    <div class="col-sm-2 "></div>
+    <div class="col-sm-8 text-left" style="margin-top: 45px; background-color:white">
+        <form action="{{ url_for('add_item',category_name = session['last_category']) }}"  method = "post" data-toggle="validator">
+            <div class="col-sm-5" style="box-suppress:hide;">
+              	<h4 class="head_label">Add Item to category {{session['last_category']}}</h4>
+                <div class="list-group">
+                    <div class="list-group-item" style="padding-left: 0px; padding-top: 0px; border: hidden;">
+                        <div class="form-group">
+                            <label for="title">Title:</label>
+                            <input type ="text" data-minlength="1" class="form-control" name="title"  placeholder="Title of the item" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="description">Description:</label>
+                            <textarea class="form-control" data-minlength="1" maxlength="250" rows="3" name="description" placeholder="Detailed description of the item, up to 250 characters" required ></textarea>
+                        </div>
+                        <div class="padding-bottom"></div>
+					    <button type="submit" class="btn btn-default btn-form " id="submit" type="submit">Create</button>
+                        <br>
+                        <br>
+                        <a href="{{url_for('show_catalog_category', category_name = session['last_category'] )}}" style="color: #524f52; padding-left: 0px; padding-top: 5px;">Back to Catalog</a>
+				    </div>
+  				</div>
+            </div>
+        </form>
+      </div>
+  </div>
+
+{% endblock %}
