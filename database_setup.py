@@ -1,5 +1,5 @@
 import re
-from sqlalchemy import Column, ForeignKey, Integer, String, CheckConstraint
+from sqlalchemy import Column, ForeignKey, Integer, String, Text, Float
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, validates
 from sqlalchemy import create_engine
@@ -9,17 +9,19 @@ import psycopg2
 
 Base = declarative_base()
 
+#  APPLICATION_PATH = "/var/www/CatalogApp/CatalogApp/"
+APPLICATION_PATH = "./"
+
+DB_SECREATS_PATH = APPLICATION_PATH + "db_secrets.json"
+
 DB_USER = json.loads(
-    # open("/var/www/TopicModelingTool/db_secrets.json", 'r').read())['database']['user']
-    open("./db_secrets.json", 'r').read())['database']['user']
+    open(DB_SECREATS_PATH, 'r').read())['database']['user']
 
 DB_PASSWORD = json.loads(
-    # open("/var/www/TopicModelingTool/db_secrets.json", 'r').read())['database']['password']
-    open("./db_secrets.json", 'r').read())['database']['password']
+    open(DB_SECREATS_PATH, 'r').read())['database']['password']
 
 DB_NAME = json.loads(
-    # open("/var/www/TopicModelingTool/db_secrets.json", 'r').read())['database']['name']
-    open("./db_secrets.json", 'r').read())['database']['name']
+    open(DB_SECREATS_PATH, 'r').read())['database']['name']
 
 class User(Base):
     __tablename__ = 'user'
@@ -27,7 +29,6 @@ class User(Base):
     name = Column(String(40), nullable=False)
     email = Column(String(254), unique=True, nullable=False)
     picture = Column(String(250))
-    # user_items = relationship("CategoryItem")
 
     @property
     def serialize(self):
@@ -65,18 +66,18 @@ class Model(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String(40), unique=True, nullable=False)
-    model_topics = relationship("ModelTopic")
-    __table_args__ = (
-        CheckConstraint(
-            name.expression != "JSON",
-            name='model_name_cannot_be_JSON'
-        ),
-        {})
+    topics = relationship("Topic")
+    inferences = relationship("Inference")
 
     @property
     def serialize(self):
         """Return object data in easily serializeable format"""
-        if not self.model_topics:
+        return {'id': self.id,'name': self.name}
+
+    @property
+    def serialize_all(self):
+        """Return object data in easily serializeable format"""
+        if not self.topics:
             return {
                 'id': self.id,
                 'name': self.name}
@@ -84,7 +85,8 @@ class Model(Base):
             return {
                 'id': self.id,
                 'name': self.name,
-                'Item': [i.serialize for i in self.model_topics]}
+                'Topics': [t.serialize for t in self.topics]}
+
 
     @validates('name')
     def validate_model_name(self, key, name):
@@ -96,29 +98,40 @@ class Model(Base):
         return name
 
 
-class ModelTopic(Base):
-    __tablename__ = 'model_topic'
+class Topic(Base):
+    __tablename__ = 'topic'
 
     id = Column(Integer, primary_key=True)
     name = Column(String(40), nullable=False)
-    # description = Column(String(250), nullable=False)
-    model_id = Column(Integer, ForeignKey('model.id'))
-    model = relationship("Model", back_populates='model_topics')
-    back_populates = 'topics'
-    # user_id = Column(Integer, ForeignKey('user.id'))
-    # user = relationship("User", back_populates='user_items')
+    model_id = Column(Integer, ForeignKey('model.id'),nullable=False)
+    model = relationship("Model", back_populates='topics')
+    #back_populates = 'topics'
+    words = relationship("Word")
 
     @property
     def serialize(self):
         """Return object data in easily serializeable format"""
         return {
-            'model_id': self.model_id,
-            # 'description': self.description,
             'id': self.id,
-            'name': self.name}
+            'name': self.name
+        }
+
+    @property
+    def serialize_all(self):
+        """Return object data in easily serializeable format"""
+        if not self.words:
+            return {
+                'id': self.id,
+                'name': self.name
+            }
+        else:
+            return {
+                'id': self.id,
+                'name': self.name,
+                'Words': [w.serialize for w in self.words]}
 
     @validates('name')
-    def validate_topic_name(self, key, title):
+    def validate_topic_name(self, key, name):
         if not name:
             raise AssertionError('No topic name provided')
         if len(name) < 1 or len(name) > 40:
@@ -126,45 +139,86 @@ class ModelTopic(Base):
                                  ' 1 and 40 characters')
         return name
 
-    # @validates('description')
-    # def validate_item_description(self, key, description):
-    #    if not description:
-    #        raise AssertionError('No item description provided')
-    #    if len(description) < 1 or len(description) > 250:
-    #        raise AssertionError('Item description must be between'
-    #                             ' 5 and 40 characters')
-    #    return description
 
-
-class TopicWord(Base):
-    __tablename__ = 'topic_word'
+class Word(Base):
+    __tablename__ = 'word'
 
     id = Column(Integer, primary_key=True)
     name = Column(String(40), nullable=False)
-    # description = Column(String(250), nullable=False)
-    topic_id = Column(Integer, ForeignKey('model_topic.id'))
-    topic = relationship("ModelTopic", back_populates='topic_words')
-    back_populates = 'words'
-    # user_id = Column(Integer, ForeignKey('user.id'))
-    # user = relationship("User", back_populates='user_items')
+    distribution = Column(Float, nullable=False)
+    topic_id = Column(Integer, ForeignKey('topic.id'),nullable=False)
+    topic = relationship("Topic", back_populates='words')
+    #back_populates = 'words'
 
     @property
     def serialize(self):
         """Return object data in easily serializeable format"""
         return {
-            'topic_id': self.topic_id,
-            # 'description': self.description,
             'id': self.id,
-            'name': self.name}
+            'name': self.name,
+	        'dist': self.distribution
+        }
 
     @validates('name')
-    def validate_word_name(self, key, title):
+    def validate_word_name(self, key, name):
         if not name:
             raise AssertionError('No word name provided')
         if len(name) < 1 or len(name) > 40:
             raise AssertionError('Word name must be between'
                                  ' 1 and 40 characters')
         return name
+
+
+class Inference(Base):
+    __tablename__ = 'inference'
+
+    id = Column(Integer, primary_key=True)
+    text = Column(Text, nullable=False)
+    model_id = Column(Integer, ForeignKey('model.id'),nullable=False)
+    model = relationship("Model", back_populates='inferences')
+    # back_populates = 'inferences'
+    distribution = relationship("Distribution", cascade="all, delete-orphan")
+
+    @property
+    def serialize(self):
+        """Return object data in easily serializeable format"""
+        return {
+            'id': self.id,
+            'text': self.text
+        }
+
+    @property
+    def serialize_all(self):
+        """Return object data in easily serializeable format"""
+        if not self.distribution:
+            return {
+                'id': self.id,
+                'text': self.text
+            }
+        else:
+            return {
+                'id': self.id,
+	            'text': self.text,
+                'Distribution': [d.serialize for d in self.distribution]}
+
+class Distribution(Base):
+    __tablename__ = 'distribution'
+
+    distribution = Column(Float, nullable=False)
+    inference_id = Column(Integer, ForeignKey('inference.id'),primary_key=True)
+    topic_id = Column(Integer, ForeignKey('topic.id'),primary_key=True)
+    inference = relationship("Inference", back_populates='distribution')
+    #back_populates = 'inferences'
+
+    @property
+    def serialize(self):
+        """Return object data in easily serializeable format"""
+        return {
+	        'topic_id': self.topic_id,
+            'distribution': self.distribution
+        }
+
+
 
 print ("DB_USER={}, DB_PASSWORD={}, DB_NAME={}".format(DB_USER,DB_PASSWORD,DB_NAME ))
 engine = create_engine(
