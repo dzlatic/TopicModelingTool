@@ -83,6 +83,7 @@ def check_session_status(f):
         return f(*args, **kwargs)
     return x
 """
+
 def get_inference_distribution(inference, text):
     topic_distribution =[]
     model_id=inference.model_id
@@ -93,6 +94,7 @@ def get_inference_distribution(inference, text):
         topic_distribution.append({"id":topic.id, "distribution": 0.05})
     print("APPENDED: {}".format(topic_distribution))
     return topic_distribution
+
 
 @app.route('/')
 @app.route('/models')
@@ -115,21 +117,33 @@ def post_model_inference(model_id):
     if request.headers['Content-Type'] == 'application/json':
         try:
             model = db_session.query(Model).filter_by(id=model_id).one()
-            text = request.json["text"]
+            try:
+                text = request.json["text"]
+            except KeyError:
+                message = "Invalid request body format."
+                return jsonify(Error=message)
             inference = Inference(model_id=model.id, text=text)
             db_session.add(inference)
             topic_distribution = get_inference_distribution(inference, text)
-            for topic in topic_distribution:
-                print("Topic: {}".format(topic))
-                distribution = Distribution(inference_id=inference.id, topic_id=topic['id'], distribution=topic['distribution'])
+            for topic_inf in topic_distribution:
+                print("Topic: {}".format(topic_inf))
+                topic = db_session.query(Topic).filter_by(id=topic_inf['id']).one()
+                distribution = Distribution(inference_id=inference.id, rank=1, topic_id=topic.id, topic_name=topic.name, topic_action=topic.action, distribution=topic_inf['distribution'])
                 db_session.add(distribution)
+            db_session.commit()
+            distributions = db_session.query(Distribution).filter_by(inference_id=inference.id).order_by(Distribution.distribution, Distribution.topic_name)
+            rank = 1
+            for distribution in distributions:
+                distribution.rank = rank
+                db_session.add(distribution)
+                rank += 1
             db_session.commit()
             return jsonify(Inference=[inference.serialize_all])
         except orm_exc.NoResultFound:
             message = "Model with id:{} doesn't exist.".format(model_id)
             return jsonify(Error=message)
     else:
-        message = "415 Unsupported Media Type"
+        message = "'Content-Type' must be 'application/json'"
         return jsonify(Error=message)
 
 @app.route('/model/<int:model_id>/inferences')
@@ -141,27 +155,20 @@ def get_model_inferences(model_id):
         message = "Model with id:{} doesn't exist.".format(model_id)
         return jsonify(Error=message)
 
-@app.route('/inference/<int:inference_id>')
+@app.route('/inference/<int:inference_id>', methods=['GET','DELETE'])
 def get_inference(inference_id):
     try:
         inference = db_session.query(Inference).filter_by(id=inference_id).one()
-        return jsonify(Inference=inference.serialize_all)
+        if request.method == 'GET':
+            return jsonify(Inference=inference.serialize_all)
+        elif request.method == 'DELETE':
+            db_session.delete(inference)
+            db_session.commit()
+            message = "Inference has been deleted."
+            return jsonify(Success=message)
     except orm_exc.NoResultFound:
-        message = "Inference with id:{} doesn't exist.".format(inference_id)
-        return jsonify(Error=message)
-
-@app.route('/inference/<int:inference_id>/remove', methods=['DELETE'])
-def delete_inference(inference_id):
-    try:
-        inference = db_session.query(Inference).filter_by(id=inference_id).one()
-        db_session.delete(inference)
-        db_session.commit()
-        message = "Inference has been deleted."
-        return jsonify(Success=message)
-    except orm_exc.NoResultFound:
-        message = "Inference with id:{} doesn't exist.".format(inference_id)
-        return jsonify(Error=message)
-
+            message = "Inference with id:{} doesn't exist.".format(inference_id)
+            return jsonify(Error=message)
 
 @app.route('/topic/<int:topic_id>', methods=['GET','POST'])
 def topic_json(topic_id):
@@ -170,23 +177,38 @@ def topic_json(topic_id):
         if request.method == 'GET':
             return jsonify(Topic=[topic.serialize_all])
         elif request.method == 'POST':
-            print ("request.method == POST")
+            if request.headers['Content-Type'] == 'application/json':
+                try:
+                    new_name = request.json["name"]
+                    topic.name = new_name
+                    name_provided = True
+                except KeyError:
+                    name_provided = False
+                try:
+                    new_action = request.json["action"]
+                    topic.action = new_action
+                    action_provided = True
+                except KeyError:
+                    action_provided = False
+                if name_provided or action_provided:
+                    try:
+                        db_session.add(topic)
+                        db_session.commit()
+                        return jsonify(Topic=[topic.serialize])
+                    except (IntegrityError,
+                            orm_exc.NoResultFound,
+                            AssertionError,
+                            NameError) as e:
+                        db_session.rollback()
+                        message = "Topic name already exist."
+                        return jsonify(Error=message)
+                else:
+                    message = "Invalid request body format."
+                    return jsonify(Error=message)
+            else:
+                message = "'Content-Type' must be 'application/json'"
+                return jsonify(Error=message)
 
-            new_name = request.json["name"]
-            print("name retrieved {}".format(new_name))
-            topic.name = new_name
-            try:
-                db_session.add(topic)
-                db_session.commit()
-                return jsonify(Topic=[topic.serialize])
-            except (IntegrityError,
-                    orm_exc.NoResultFound,
-                    AssertionError,
-                    NameError) as e:
-                return jsonify(Error=e)
-        else:
-            message = "415 Unsupported Request Type"
-            return jsonify(Error=message)
     except orm_exc.NoResultFound:
         message = "Topic with id:{} doesn't exist.".format(topic_id)
         return jsonify(Error=message)

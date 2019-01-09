@@ -102,7 +102,8 @@ class Topic(Base):
     __tablename__ = 'topic'
 
     id = Column(Integer, primary_key=True)
-    name = Column(String(40), nullable=False)
+    name = Column(String(40), unique=True, nullable=False)
+    action = Column(String(40), nullable=True)
     model_id = Column(Integer, ForeignKey('model.id'),nullable=False)
     model = relationship("Model", back_populates='topics')
     #back_populates = 'topics'
@@ -113,7 +114,8 @@ class Topic(Base):
         """Return object data in easily serializeable format"""
         return {
             'id': self.id,
-            'name': self.name
+            'name': self.name,
+            'action': self.action
         }
 
     @property
@@ -122,13 +124,16 @@ class Topic(Base):
         if not self.words:
             return {
                 'id': self.id,
-                'name': self.name
+                'name': self.name,
+                'action': self.action
             }
         else:
             return {
                 'id': self.id,
                 'name': self.name,
-                'Words': [w.serialize for w in self.words]}
+                'action': self.action,
+                'Words': [w.serialize for w in self.words]
+            }
 
     @validates('name')
     def validate_topic_name(self, key, name):
@@ -205,8 +210,11 @@ class Distribution(Base):
     __tablename__ = 'distribution'
 
     distribution = Column(Float, nullable=False)
+    rank = Column(Integer, nullable=False)
     inference_id = Column(Integer, ForeignKey('inference.id'),primary_key=True)
     topic_id = Column(Integer, ForeignKey('topic.id'),primary_key=True)
+    topic_name = Column(String(40), nullable=False)
+    topic_action = Column(String(40), nullable=True)
     inference = relationship("Inference", back_populates='distribution')
     #back_populates = 'inferences'
 
@@ -214,11 +222,12 @@ class Distribution(Base):
     def serialize(self):
         """Return object data in easily serializeable format"""
         return {
-	        'topic_id': self.topic_id,
+            'rank': self.rank,
+            'topic_id': self.topic_id,
+            'topic_name:': self.topic_name,
+            'topic_action': self.topic_action,
             'distribution': self.distribution
         }
-
-
 
 print ("DB_USER={}, DB_PASSWORD={}, DB_NAME={}".format(DB_USER,DB_PASSWORD,DB_NAME ))
 engine = create_engine(

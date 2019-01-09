@@ -25,11 +25,17 @@ db_session = DBSession()
 # IMPORTANT: YOUR CATEGORY CANNOT BE NAMED 'JSON'!
 # This is a reserved route for JSON database export.
 # Add Categories.this also includes some test cases for various errors
-model_topic_word = [("Model2", [
-                        ("#1", [("price",0.90), ("service",0.02), ("product",0.08)]),
-                        ("#2", [("revenue", 0.6), ("competition", 0.4)])]
+model_topic_word = [("Model3", [
+                        ("#4", [("price",0.90), ("service",0.02), ("product",0.08)]),
+                        ("#5", [("revenue", 0.6), ("competition", 0.4)])]
                      )]
 
+
+model_topic_word2 = [("Model1", [
+                        ("#1", [("traffic",0.90), ("road",0.02), ("weather",0.08)]),
+                        ("#2", [("city",0.50), ("country",0.22), ("state",0.28)]),
+                        ("#3", [("time", 0.6), ("date", 0.4)])]
+                     )]
 
 def add_model(model_def):
     for model_name, topics in model_def:
@@ -71,4 +77,4 @@ def add_topic_words(topic, words):
             db_session.rollback()
             print("Word error: {}".format(e))
 
-add_model(model_topic_word)
+add_model(model_topic_word2)
