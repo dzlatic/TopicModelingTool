@@ -22,7 +22,7 @@ from database_setup import Base, Model, Topic, Word, User, Inference, Distributi
 
 app = Flask(__name__)
 
-#  APPLICATION_PATH = "/var/www/CatalogApp/CatalogApp/"
+#APPLICATION_PATH = "/var/www/CatalogApp/CatalogApp/"
 APPLICATION_PATH = "./"
 
 DB_SECREATS_PATH = APPLICATION_PATH + "db_secrets.json"
