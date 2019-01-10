@@ -2,7 +2,7 @@ import os
 from flask import Flask, render_template, request, \
     redirect, jsonify, url_for, flash, send_from_directory
 import functools
-from sqlalchemy import asc, create_engine
+from sqlalchemy import asc, desc, create_engine
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import sessionmaker, joinedload, exc as orm_exc
 
@@ -17,12 +17,19 @@ import json
 from flask import make_response
 import requests
 
+import nltk
+import re
+from gensim import models, corpora
+from nltk import word_tokenize
+from nltk.corpus import stopwords
+STOPWORDS = stopwords.words('english')
 
-from database_setup import Base, Model, Topic, Word, User, Inference, Distribution
+
+from database_setup import Base, Model, Topic, Word, Inference, Distribution
 
 app = Flask(__name__)
 
-#APPLICATION_PATH = "/var/www/CatalogApp/CatalogApp/"
+# APPLICATION_PATH = "/var/www/CatalogApp/CatalogApp/"
 APPLICATION_PATH = "./"
 
 DB_SECREATS_PATH = APPLICATION_PATH + "db_secrets.json"
@@ -54,49 +61,24 @@ Base.metadata.bind = engine
 DBSession = sessionmaker(bind=engine)
 db_session = DBSession()
 
-"""
-def login_required(f):
-    @functools.wraps(f)
-    def x(*args, **kwargs):
-        if 'username' not in login_session:
-            flash("Please sign in to perform desired operation.", "flash-warn")
-            return redirect(location=url_for('show_catalog'),
-                            code=302,
-                            Response=None)
-        return f(*args, **kwargs)
-    return x
+def clean_text(text):
+	tokenized_text = word_tokenize(text.lower())
+	cleaned_text = [t for t in tokenized_text if t not in STOPWORDS and re.match('[a-zA-Z\-][a-zA-Z\-]{2,}', t)]
+	return cleaned_text
 
-
-def check_session_status(f):
-    @functools.wraps(f)
-    def x(*args, **kwargs):
-        try:
-            session_code = login_session['session_code']
-        except KeyError:
-            login_session.clear()
-            session_code = ''.join(
-                random.choice(
-                    string.ascii_uppercase + string.digits) for x in range(32))
-            login_session['session_code'] = session_code
-            flash("Welcome!", "flash-ok")
-            print("New session has been initialized {}".format(login_session))
-        return f(*args, **kwargs)
-    return x
-"""
-
-def get_inference_distribution(inference, text):
-    topic_distribution =[]
-    model_id=inference.model_id
-    model = db_session.query(Model).filter_by(id=model_id).one()
-    topics = model.topics
-    for topic in topics:
-        print("appending: id:{}, distribution: 0.05 ".format(topic.id))
-        topic_distribution.append({"id":topic.id, "distribution": 0.05})
-    print("APPENDED: {}".format(topic_distribution))
-    return topic_distribution
-
+def get_inference_distribution (name, text):
+    print("original text: {}".format(text))
+    print("cleaned text: {}".format(clean_text(text)))
+    file_name="./models/" + name
+    lda_model = models.LdaModel.load(file_name)
+    dictionary = corpora.Dictionary([clean_text(text)])
+    bow = dictionary.doc2bow(clean_text(text))
+    return lda_model[bow]
 
 @app.route('/')
+def show_home():
+    return render_template('index.html')
+
 @app.route('/models')
 #  @check_session_status
 def get_models_json():
@@ -116,30 +98,37 @@ def get_model_json(model_id):
 def post_model_inference(model_id):
     if request.headers['Content-Type'] == 'application/json':
         try:
+            #db_session.autoflush = False
             model = db_session.query(Model).filter_by(id=model_id).one()
+            print("debug 1")
             try:
                 text = request.json["text"]
             except KeyError:
+                #db_session.autoflush = True
                 message = "Invalid request body format."
                 return jsonify(Error=message)
-            inference = Inference(model_id=model.id, text=text)
+            inference = Inference(model_id=model_id, text=text)
             db_session.add(inference)
-            topic_distribution = get_inference_distribution(inference, text)
-            for topic_inf in topic_distribution:
-                print("Topic: {}".format(topic_inf))
-                topic = db_session.query(Topic).filter_by(id=topic_inf['id']).one()
-                distribution = Distribution(inference_id=inference.id, rank=1, topic_id=topic.id, topic_name=topic.name, topic_action=topic.action, distribution=topic_inf['distribution'])
-                db_session.add(distribution)
             db_session.commit()
-            distributions = db_session.query(Distribution).filter_by(inference_id=inference.id).order_by(Distribution.distribution, Distribution.topic_name)
+            topic_distribution = get_inference_distribution(model.name, text)
+            for topic_number, dist in topic_distribution:
+                #db_session.autoflush = False
+                topic = db_session.query(Topic).filter_by(number=topic_number).one()
+                distribution = Distribution(model_id=model_id, inference_id=inference.id, rank=0, topic_number=topic.number, topic_alias=topic.alias, topic_action=topic.action, distribution=dist.astype(float))
+                #db_session.autoflush = True
+                db_session.add(distribution)
+                db_session.commit()
+            distributions = db_session.query(Distribution).filter_by(inference_id=inference.id, model_id=model_id).order_by(desc(Distribution.distribution), asc(Distribution.topic_number))
             rank = 1
             for distribution in distributions:
                 distribution.rank = rank
                 db_session.add(distribution)
                 rank += 1
             db_session.commit()
+            #db_session.autoflush = True
             return jsonify(Inference=[inference.serialize_all])
         except orm_exc.NoResultFound:
+            #db_session.autoflush = True
             message = "Model with id:{} doesn't exist.".format(model_id)
             return jsonify(Error=message)
     else:
@@ -155,10 +144,10 @@ def get_model_inferences(model_id):
         message = "Model with id:{} doesn't exist.".format(model_id)
         return jsonify(Error=message)
 
-@app.route('/inference/<int:inference_id>', methods=['GET','DELETE'])
-def get_inference(inference_id):
+@app.route('/model/<int:model_id>/inference/<int:inference_id>', methods=['GET','DELETE'])
+def get_inference(model_id, inference_id):
     try:
-        inference = db_session.query(Inference).filter_by(id=inference_id).one()
+        inference = db_session.query(Inference).filter_by(model_id=model_id, id=inference_id).one()
         if request.method == 'GET':
             return jsonify(Inference=inference.serialize_all)
         elif request.method == 'DELETE':
@@ -170,38 +159,30 @@ def get_inference(inference_id):
             message = "Inference with id:{} doesn't exist.".format(inference_id)
             return jsonify(Error=message)
 
-@app.route('/topic/<int:topic_id>', methods=['GET','POST'])
-def topic_json(topic_id):
+@app.route('/model/<int:model_id>/topic/<int:topic_number>', methods=['GET','POST'])
+def topic_json(model_id,topic_number):
     try:
-        topic = db_session.query(Topic).filter_by(id=topic_id).one()
+        topic = db_session.query(Topic).filter_by(model_id=model_id, number=topic_number).one()
         if request.method == 'GET':
             return jsonify(Topic=[topic.serialize_all])
         elif request.method == 'POST':
             if request.headers['Content-Type'] == 'application/json':
                 try:
-                    new_name = request.json["name"]
-                    topic.name = new_name
-                    name_provided = True
+                    new_alias = request.json["alias"]
+                    topic.alias = new_alias
+                    alias_provided = True
                 except KeyError:
-                    name_provided = False
+                    alias_provided = False
                 try:
                     new_action = request.json["action"]
                     topic.action = new_action
                     action_provided = True
                 except KeyError:
                     action_provided = False
-                if name_provided or action_provided:
-                    try:
-                        db_session.add(topic)
-                        db_session.commit()
-                        return jsonify(Topic=[topic.serialize])
-                    except (IntegrityError,
-                            orm_exc.NoResultFound,
-                            AssertionError,
-                            NameError) as e:
-                        db_session.rollback()
-                        message = "Topic name already exist."
-                        return jsonify(Error=message)
+                if alias_provided or action_provided:
+                    db_session.add(topic)
+                    db_session.commit()
+                    return jsonify(Topic=[topic.serialize])
                 else:
                     message = "Invalid request body format."
                     return jsonify(Error=message)
