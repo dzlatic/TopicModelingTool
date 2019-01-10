@@ -29,8 +29,8 @@ from database_setup import Base, Model, Topic, Word, Inference, Distribution
 
 app = Flask(__name__)
 
-# APPLICATION_PATH = "/var/www/CatalogApp/CatalogApp/"
-APPLICATION_PATH = "./"
+APPLICATION_PATH = "/var/www/TopicModelingTool/TopicModelingTool/"
+# APPLICATION_PATH = "./"
 
 DB_SECREATS_PATH = APPLICATION_PATH + "db_secrets.json"
 CLIENT_SECTRETS_PATH = APPLICATION_PATH + "client_secrets.json"

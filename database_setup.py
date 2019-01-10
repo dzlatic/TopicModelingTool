@@ -9,8 +9,8 @@ import psycopg2
 
 Base = declarative_base()
 
-# APPLICATION_PATH = "/var/www/TopicModelingTool/TopicModelingTool/"
-APPLICATION_PATH = "./"
+APPLICATION_PATH = "/var/www/TopicModelingTool/TopicModelingTool/"
+# APPLICATION_PATH = "./"
 
 DB_SECREATS_PATH = APPLICATION_PATH + "db_secrets.json"
 
