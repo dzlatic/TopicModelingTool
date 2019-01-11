@@ -69,7 +69,7 @@ def clean_text(text):
 def get_inference_distribution (name, text):
     print("original text: {}".format(text))
     print("cleaned text: {}".format(clean_text(text)))
-    file_name="./models/" + name
+    file_name = APPLICATION_PATH + "/models/" + name
     lda_model = models.LdaModel.load(file_name)
     dictionary = corpora.Dictionary([clean_text(text)])
     bow = dictionary.doc2bow(clean_text(text))
