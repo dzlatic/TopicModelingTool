@@ -44,7 +44,7 @@ h3 {
 
  .app_title {
 	 font-weight: lighter;
-     font-size: 30px;
+     font-size: 28px;
 	 color: white;
  }
 
@@ -112,3 +112,7 @@ h3 {
 .flash-warn {
 	color: blue;
 }
+label.required>span.green{ color: #06b116; }
+label.required>span.orange{ color: orange; }
+label.required>span.red{ color: red; }
+
