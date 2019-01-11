@@ -49,7 +49,7 @@ DB_PASSWORD = json.loads(
 DB_NAME = json.loads(
     open(DB_SECREATS_PATH, 'r').read())['database']['name']
 
-APPLICATION_NAME = "Catalog App"
+APPLICATION_NAME = "TopicModelingTool"
 
 
 engine = create_engine(
@@ -69,7 +69,8 @@ def clean_text(text):
 def get_inference_distribution (name, text):
     print("original text: {}".format(text))
     print("cleaned text: {}".format(clean_text(text)))
-    file_name = APPLICATION_PATH + "/models/" + name
+    file_name = APPLICATION_PATH + "models/" + name
+    print("Reading file: {}".format(file_name))
     lda_model = models.LdaModel.load(file_name)
     dictionary = corpora.Dictionary([clean_text(text)])
     bow = dictionary.doc2bow(clean_text(text))
@@ -100,7 +101,6 @@ def post_model_inference(model_id):
         try:
             #db_session.autoflush = False
             model = db_session.query(Model).filter_by(id=model_id).one()
-            print("debug 1")
             try:
                 text = request.json["text"]
             except KeyError:
