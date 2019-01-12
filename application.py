@@ -113,7 +113,7 @@ def post_model_inference(model_id):
             topic_distribution = get_inference_distribution(model.name, text)
             for topic_number, dist in topic_distribution:
                 #db_session.autoflush = False
-                topic = db_session.query(Topic).filter_by(number=topic_number).one()
+                topic = db_session.query(Topic).filter_by(model_id=model_id, number=topic_number).one()
                 distribution = Distribution(model_id=model_id, inference_id=inference.id, rank=0, topic_number=topic.number, topic_alias=topic.alias, topic_action=topic.action, distribution=dist.astype(float))
                 #db_session.autoflush = True
                 db_session.add(distribution)
@@ -210,6 +210,6 @@ def default_route(e):
 
 
 if __name__ == '__main__':
-    app.debug = False
+    app.debug = True
     app.secret_key = 'super_secret_key'
-    app.run(host='0.0.0.0', port=80)
+    app.run(host='0.0.0.0', port=8000)

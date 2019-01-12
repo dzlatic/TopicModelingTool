@@ -1,3 +1,4 @@
+import sys
 from sqlalchemy import create_engine, exc
 from sqlalchemy.orm import sessionmaker
 from database_setup import Model, Topic, Word, Base
@@ -28,16 +29,20 @@ DBSession = sessionmaker(bind=engine)
 
 db_session = DBSession()
 
-def add_model(name, number_of_topics):
+def add_model(name, number_of_topics, model_type):
     file_name="./models/" + name
-    lda_model = models.LdaModel.load(file_name)
+    if model_type=='LDA':
+        model = models.LdaModel.load(file_name)
+    elif model_type=='LSI':
+        model = models.LsiModel.load(file_name)
+
     try:
         new_model = Model(name=name, number_of_topics=number_of_topics )
         db_session.add(new_model)
         db_session.commit()
         print("Model {}  with {} topics added successfully.".format(name, number_of_topics))
         #model_new = db_session.query(Model).filter_by(name=model_name).one()
-        add_model_topics(new_model, lda_model.show_topics(formatted=False))
+        add_model_topics(new_model, model.show_topics(formatted=False))
     except (exc.IntegrityError, AssertionError,
             AttributeError, NameError) as e:
         db_session.rollback()
@@ -68,4 +73,7 @@ def add_topic_words(model, topic, words):
             db_session.rollback()
             print("Word error: {}".format(e))
 
-add_model("NLTK_BROWN", 10)
+
+add_model(sys.argv[1], sys.argv[2], sys.argv[3])
+#print('Number of arguments:', len(sys.argv), 'arguments.')
+#print('Argument List:', str(sys.argv))
