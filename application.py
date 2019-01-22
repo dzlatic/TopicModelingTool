@@ -29,7 +29,7 @@ import numpy as np
 
 #import pandas as pd
 
-from pprint import pprint
+
 
 # Gensim
 
@@ -75,7 +75,7 @@ from database_setup import Base, Model, Topic, Word, Inference, Distribution
 app = Flask(__name__)
 
 APPLICATION_PATH = "/var/www/TopicModelingTool/TopicModelingTool/"
-# APPLICATION_PATH = "./"
+#  APPLICATION_PATH = "./"
 
 DB_SECREATS_PATH = APPLICATION_PATH + "db_secrets.json"
 CLIENT_SECTRETS_PATH = APPLICATION_PATH + "client_secrets.json"
@@ -206,7 +206,6 @@ def post_model_inference(model_id):
             model = db_session.query(Model).filter_by(id=model_id).one()
             try:
                 text = request.get_data(as_text=True)
-                print(text)
             except KeyError:
                 #db_session.autoflush = True
                 message = "Invalid request body format."
@@ -215,7 +214,6 @@ def post_model_inference(model_id):
             db_session.add(inference)
             db_session.commit()
             topic_distribution = get_inference_distribution(model.name, text)
-            #print(topic_distribution)
             for topic_number, dist in topic_distribution[0]:
                 #db_session.autoflush = False
                 topic = db_session.query(Topic).filter_by(model_id=model_id, number=topic_number + 1).one() # +1 to harmonize with lyLDAviz
