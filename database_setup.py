@@ -30,6 +30,7 @@ class Model(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String(40), unique=True, nullable=False)
     number_of_topics = Column(Integer, nullable=False)
+    coherence_score = Column(Float, nullable=False)
     topics = relationship("Topic")
     inferences = relationship("Inference")
 
@@ -49,6 +50,7 @@ class Model(Base):
             return {
                 'id': self.id,
                 'name': self.name,
+                'coherence_score': self.coherence_score,
                 'Topics': [t.serialize for t in self.topics]}
 
 

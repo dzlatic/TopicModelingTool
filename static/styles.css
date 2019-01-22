@@ -60,8 +60,22 @@ h3 {
 }
 
 .form-control {
-	 height: 20px;
+    width: 60%;
  }
+
+.form-group label, .form-group input {
+    float: none;
+    display: inline-block;
+    vertical-align: middle;
+    height: 20px;
+}
+
+.list-group-item label, .list-group-item a, .list-group-item em {
+    float: none;
+    display: inline-block;
+    vertical-align: middle;
+}
+
 
  .btn-form {
 	 height: 20px;
@@ -115,4 +129,20 @@ h3 {
 label.required>span.green{ color: #06b116; }
 label.required>span.orange{ color: orange; }
 label.required>span.red{ color: red; }
+label.required>span.black{ color: #010003; }
+
+
+#list-group-scroll {
+	max-height: 700px;
+    margin-top: 50px;
+    margin-bottom: 2px;
+	overflow: auto;
+	-webkit-overflow-scrolling: touch;
+}
+
+.content {
+    float: none;
+    display: inline-block;
+    vertical-align: middle;
+}
 

@@ -22,7 +22,52 @@ import re
 from gensim import models, corpora
 from nltk import word_tokenize
 from nltk.corpus import stopwords
-STOPWORDS = stopwords.words('english')
+
+import re
+
+import numpy as np
+
+#import pandas as pd
+
+from pprint import pprint
+
+# Gensim
+
+import gensim
+
+import gensim.corpora as corpora
+
+from gensim.utils import simple_preprocess
+
+from gensim.models import CoherenceModel
+
+# spacy for lemmatization
+
+import spacy
+
+# Plotting tools
+
+import pyLDAvis
+
+import pyLDAvis.gensim  # don't skip this
+
+#import matplotlib.pyplot as plt
+
+# Enable logging for gensim - optional
+
+import logging
+
+logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.ERROR)
+
+from tqdm import tqdm
+
+import collections as cl
+
+import warnings
+
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+
+
 
 
 from database_setup import Base, Model, Topic, Word, Inference, Distribution
@@ -61,19 +106,77 @@ Base.metadata.bind = engine
 DBSession = sessionmaker(bind=engine)
 db_session = DBSession()
 
-def clean_text(text):
-	tokenized_text = word_tokenize(text.lower())
-	cleaned_text = [t for t in tokenized_text if t not in STOPWORDS and re.match('[a-zA-Z\-][a-zA-Z\-]{2,}', t)]
-	return cleaned_text
+
+
+STOPWORDS = stopwords.words('english')
+STOPWORDS.extend(['from', 'subject', 're', 'edu', 'use', 'go', 'get', 'not', 'be', 'know', 'good',
+                  'do', 'think', 'would', 'see', 'pm', 'want', 'send', 'work', 'time', 'call', 's',
+                  'day', 'week', 'let', 'may', 'come', 'look', 'well', 'take', 'back', 'phone',
+                  'need', 'make', 'also'])
+
+
+## Tokenize words and Clean-up text
+def sent_to_words(sentences):
+    for sentence in sentences:
+        yield (gensim.utils.simple_preprocess(str(sentence), deacc=True))  # deacc=True removes punctuations
+
+## Remove Stopwords, Make Bigrams and Lemmatize
+# Define functions for stopwords, bigrams, trigrams and lemmatization
+
+
+
+
 
 def get_inference_distribution (name, text):
-    print("original text: {}".format(text))
-    print("cleaned text: {}".format(clean_text(text)))
-    file_name = APPLICATION_PATH + "models/" + name
-    print("Reading file: {}".format(file_name))
-    lda_model = models.LdaModel.load(file_name)
-    dictionary = corpora.Dictionary([clean_text(text)])
-    bow = dictionary.doc2bow(clean_text(text))
+    def clean_text(text):
+        # helper functions
+        def remove_stopwords(texts):
+            return [[word for word in simple_preprocess(str(doc)) if word not in STOPWORDS] for doc in texts]
+
+        def make_bigrams(texts):
+            model_file_name = APPLICATION_PATH + "models/" + name + ".bigram"
+            bigram_mod = models.phrases.Phraser.load(model_file_name)
+            return [bigram_mod[doc] for doc in texts]
+
+        def make_trigrams(texts):
+            model_file_name = APPLICATION_PATH + "models/" + name + ".trigram"
+            trigram_mod = models.phrases.Phraser.load(model_file_name)
+            return [trigram_mod[doc] for doc in texts]
+
+        def lemmatization(texts, allowed_postags=['NOUN', 'ADJ', 'VERB', 'ADV']):
+            """https://spacy.io/api/annotation"""
+            texts_out = []
+            for sent in texts:
+                doc = nlp(" ".join(sent))
+                texts_out.append([token.lemma_ for token in doc if token.pos_ in allowed_postags])
+            return texts_out
+
+        # Convert to list
+        data = [text]
+        # Remove Emails
+        # data = [re.sub('\S*@\S*\s?', '', sent) for sent in data]
+        # Remove new line characters
+        data = [re.sub('\s+', ' ', sent) for sent in data]
+        # Remove distracting single quotes
+        data = [re.sub("\'", "", sent) for sent in data]
+        ## Tokenize words and Clean-up text
+        data_words = list(sent_to_words(data))
+        # Form Bigrams
+        data_words_bigrams = make_bigrams(data_words)
+        # Form Trigrams
+        data_words_trigrams = make_trigrams(data_words_bigrams)
+        # Do lemmatization keeping only noun, adj, vb, adv
+        nlp = spacy.load('en', disable=['parser', 'ner'])
+        data_lemmatized = lemmatization(data_words_trigrams, allowed_postags=['NOUN', 'ADJ', 'VERB', 'ADV'])
+        # Remove Stop Words
+        data_words_final = remove_stopwords(data_lemmatized)
+        return data_words_final
+
+    model_file_name = APPLICATION_PATH + "models/" + name
+    dict_file_name = APPLICATION_PATH + "models/" + name + ".id2word"
+    lda_model = models.LdaModel.load(model_file_name)
+    dictionary = corpora.Dictionary.load(dict_file_name)
+    bow = dictionary.doc2bow(clean_text(text)[0])
     return lda_model[bow]
 
 @app.route('/')
@@ -97,12 +200,13 @@ def get_model_json(model_id):
 
 @app.route('/model/<int:model_id>/inference', methods=['POST'])
 def post_model_inference(model_id):
-    if request.headers['Content-Type'] == 'application/json':
+    if request.headers['Content-Type'] == 'text/plain;charset=UTF-8':
         try:
             #db_session.autoflush = False
             model = db_session.query(Model).filter_by(id=model_id).one()
             try:
-                text = request.json["text"]
+                text = request.get_data(as_text=True)
+                print(text)
             except KeyError:
                 #db_session.autoflush = True
                 message = "Invalid request body format."
@@ -111,9 +215,10 @@ def post_model_inference(model_id):
             db_session.add(inference)
             db_session.commit()
             topic_distribution = get_inference_distribution(model.name, text)
-            for topic_number, dist in topic_distribution:
+            #print(topic_distribution)
+            for topic_number, dist in topic_distribution[0]:
                 #db_session.autoflush = False
-                topic = db_session.query(Topic).filter_by(model_id=model_id, number=topic_number).one()
+                topic = db_session.query(Topic).filter_by(model_id=model_id, number=topic_number + 1).one() # +1 to harmonize with lyLDAviz
                 distribution = Distribution(model_id=model_id, inference_id=inference.id, rank=0, topic_number=topic.number, topic_alias=topic.alias, topic_action=topic.action, distribution=dist.astype(float))
                 #db_session.autoflush = True
                 db_session.add(distribution)
@@ -132,7 +237,7 @@ def post_model_inference(model_id):
             message = "Model with id:{} doesn't exist.".format(model_id)
             return jsonify(Error=message)
     else:
-        message = "'Content-Type' must be 'application/json'"
+        message = "'Content-Type' must be 'text/plain;charset=UTF-8'"
         return jsonify(Error=message)
 
 @app.route('/model/<int:model_id>/inferences')
@@ -159,8 +264,8 @@ def get_inference(model_id, inference_id):
             message = "Inference with id:{} doesn't exist.".format(inference_id)
             return jsonify(Error=message)
 
-@app.route('/model/<int:model_id>/topic/<int:topic_number>', methods=['GET','POST'])
-def topic_json(model_id,topic_number):
+@app.route('/model/<int:model_id>/topic/<int:topic_number>', methods=['GET', 'POST'])
+def topic_json(model_id, topic_number):
     try:
         topic = db_session.query(Topic).filter_by(model_id=model_id, number=topic_number).one()
         if request.method == 'GET':
@@ -191,10 +296,42 @@ def topic_json(model_id,topic_number):
                 return jsonify(Error=message)
 
     except orm_exc.NoResultFound:
-        message = "Topic with id:{} doesn't exist.".format(topic_id)
+        message = "Topic with id:{} doesn't exist.".format(topic_number)
         return jsonify(Error=message)
 
 
+@app.route('/model/<int:model_id>/edit_topics', methods=['GET', 'POST'])
+def edit_topics(model_id):
+    try:
+        model = db_session.query(Model).filter_by(id=model_id).one()
+        #topics = db_session.query(Topic).filter_by(model_id=model_id).order_by(asc(Topic.number))
+        if request.method == 'GET':
+            return render_template('editTopics.html', model_name=model.name, model_id=model.id, topics=model.topics)
+        elif request.method == 'POST':
+            try:
+                for topic in model.topics:
+                    alias_ = 'alias'+str(topic.number)
+                    if request.form[alias_]:
+                        topic.alias = request.form[alias_]
+                    action_ = 'action' + str(topic.number)
+                    if request.form[action_]:
+                        topic.action = request.form[action_]
+                    db_session.add(topic)
+                db_session.commit()
+            except (IntegrityError,
+                    orm_exc.NoResultFound,
+                    AssertionError,
+                    NameError) as e:
+                db_session.rollback()
+                flash("Error: {}".format(e), "flash-error")
+                return render_template('editTopics.html', model_name=model.name, model_id=model.id, topics=model.topics)
+
+            flash("Item successfully edited.", "flash-ok")
+            return render_template('editTopics.html', model_name=model.name, model_id=model.id, topics=model.topics)
+
+    except orm_exc.NoResultFound:
+        flash("Model with id:{} doesn't exist.".format(model_id), "flash-error")
+        return render_template('index.html')
 
 @app.route('/favicon.ico')
 def favicon():

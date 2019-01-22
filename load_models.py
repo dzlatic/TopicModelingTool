@@ -9,6 +9,7 @@ import re
 from gensim import models, corpora
 from nltk import word_tokenize
 from nltk.corpus import stopwords
+from decimal import Decimal
 
 
 DB_USER = json.loads(
@@ -29,15 +30,32 @@ DBSession = sessionmaker(bind=engine)
 
 db_session = DBSession()
 
-def add_model(name, number_of_topics, model_type):
-    file_name="./models/" + name
+def add_model(name):
+
+    model_file_name = "./models/" + name
+    json_file_name = "./models/" + name + ".json"
+    print(json_file_name)
+
+    model_type = json.loads(
+        open(json_file_name, 'r').read())['model_type']
+    print(model_type)
+    coherence_score = json.loads(
+        open(json_file_name, 'r').read(), parse_float=Decimal)['coherence_score']
+
+
+
+    number_of_topics = json.loads(
+        open(json_file_name, 'r').read(), parse_int=Decimal)['number_of_topics']
+
+
+
     if model_type=='LDA':
-        model = models.LdaModel.load(file_name)
+        model = models.LdaModel.load(model_file_name)
     elif model_type=='LSI':
-        model = models.LsiModel.load(file_name)
+        model = models.LsiModel.load(model_file_name)
 
     try:
-        new_model = Model(name=name, number_of_topics=number_of_topics )
+        new_model = Model(name=name, number_of_topics=number_of_topics, coherence_score=coherence_score )
         db_session.add(new_model)
         db_session.commit()
         print("Model {}  with {} topics added successfully.".format(name, number_of_topics))
@@ -51,7 +69,7 @@ def add_model(name, number_of_topics, model_type):
 def add_model_topics(model, topics_def):
     for topic_number, words in topics_def:
         try:
-            new_topic = Topic(number=topic_number, model_id=model.id)
+            new_topic = Topic(number=topic_number + 1, model_id=model.id) # + 1 for harmonizing with pyLDAviz
             db_session.add(new_topic)
             db_session.commit()
             print("Topic {} added successfully for model {}.".format(str(topic_number), model.name))
@@ -74,6 +92,6 @@ def add_topic_words(model, topic, words):
             print("Word error: {}".format(e))
 
 
-add_model(sys.argv[1], sys.argv[2], sys.argv[3])
+add_model(sys.argv[1])
 #print('Number of arguments:', len(sys.argv), 'arguments.')
 #print('Argument List:', str(sys.argv))

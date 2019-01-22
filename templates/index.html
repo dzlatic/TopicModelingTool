@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,700">
 	<link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 	<link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
-	<title>Catalog App</title>
+	<title>TopicModelingTool</title>
 
 </head>
 
@@ -30,46 +30,55 @@
               	<h3 class="head_label">APIs:</h3>
                 <div class="list-group ">
                     <div class="list-group-item" style="color: #524f52; padding-left: 0px; padding-top: 5px; border: hidden;">
-                        <label class='required'><span class="green">GET</span> /models</label>
+                        <label class='required'><span class="green">GET&nbsp&nbsp&nbsp</span></label><a href="{{url_for('get_models_json')}}">/models</a>
                         <em style="color: #282828; font-size: smaller; font-weight: lighter;">Returns JSON with all Models in the system.</em>
                         <br>
                     </div>
                     <div class="list-group-item" style="color: #524f52; padding-left: 0px; padding-top: 5px; border: hidden;">
-                        <label class='required'><span class="green">GET</span> /model/&lt;int: model_id&gt;</label>
+                        <label class='required'><span class="green">GET&nbsp&nbsp&nbsp</span></label><a href="{{url_for('get_model_json', model_id=1)}}">/model/&lt;int: model_id&gt;</a>
                         <em style="color: #282828; font-size: smaller; font-weight: lighter;">Returns JSON with details about Model specified with <b>model_id</b>.</em>
                         <br>
                     </div>
                     <div class="list-group-item" style="color: #524f52; padding-left: 0px; padding-top: 5px; border: hidden;">
-                        <label class='required'><span class="orange">POST</span> /model/&lt;int: model_id&gt;/inference</label>
-                        <em style="color: #282828; font-size: smaller; font-weight: lighter;">Runs the inference operation using Model specified <b>model_id</b> over the text defined in JSON body as <b>{"text": "..."}</b>, saves the text and results into Inference object, that is returned in JSON.</em>
+                        <label class='required'><span class="orange">POST&nbsp&nbsp&nbsp</span> /model/&lt;int: model_id&gt;/inference</label>
+                        <em style="color: #282828; font-size: smaller; font-weight: lighter;">Runs the inference operation using Model specified <b>model_id</b> over the text defined in body with <b> 'Content-Type' = 'text/plain;charset=UTF-8'</b>, saves the text and results into Inference object, that is then returned in JSON.</em>
                         <br>
                     </div>
                     <div class="list-group-item" style="color: #524f52; padding-left: 0px; padding-top: 5px; border: hidden;">
-                        <label class='required'><span class="green">GET</span> /model/&lt;int: model_id&gt;/inferences</label>
+                        <label class='required'><span class="green">GET&nbsp&nbsp&nbsp</span></label><a href="{{url_for('get_model_inferences', model_id=1)}}">/model/&lt;int: model_id&gt;/inferences</a>
                         <em style="color: #282828; font-size: smaller; font-weight: lighter;">Returns JSON with details about all Inferences for the Model specified with <b>model_id</b>.</em>
                         <br>
                     </div>
                     <div class="list-group-item" style="color: #524f52; padding-left: 0px; padding-top: 5px; border: hidden;">
-                        <label class='required'><span class="green">GET</span> /model/&lt;int: model_id&gt;/inference/&lt;int: inference_id&gt;</label>
+                        <label class='required'><span class="green">GET&nbsp&nbsp&nbsp</span></label><a href="{{url_for('get_inference', model_id=1, inference_id=1)}}">/model/&lt;int: model_id&gt;/inference/&lt;int: inference_id&gt;</a>
                         <em style="color: #282828; font-size: smaller; font-weight: lighter;">Returns JSON with details about Inference specified with <b>inference_id</b> of the Model specified with <b>model_id</b>.</em>
                         <br>
                     </div>
                     <div class="list-group-item" style="color: #524f52; padding-left: 0px; padding-top: 5px; border: hidden;">
-                        <label class='required'><span class="red">DELETE</span> /model/&lt;int: model_id&gt;/inference/&lt;int: inference_id&gt;</label>
+                        <label class='required'><span class="red">DELETE&nbsp&nbsp&nbsp</span> /model/&lt;int: model_id&gt;/inference/&lt;int: inference_id&gt;</label>
                         <em style="color: #282828; font-size: smaller; font-weight: lighter;">Delete Inference specified with <b>inference_id</b> of the Model specified with <b>model_id</b> and returns confirmation as JSON.</em>
                         <br>
                     </div>
                     <div class="list-group-item" style="color: #524f52; padding-left: 0px; padding-top: 5px; border: hidden;">
-                        <label class='required'><span class="green">GET</span> /model/&lt;int: model_id&gt;/topic/&lt;int: topic_number&gt;</label>
+                        <label class='required'><span class="green">GET&nbsp&nbsp&nbsp</span></label><a href="{{url_for('topic_json', model_id=1, topic_number=1)}}">/model/&lt;int: model_id&gt;/topic/&lt;int: topic_number&gt;</a>
                         <em style="color: #282828; font-size: smaller; font-weight: lighter;">Returns JSON with details about Topic specified with <b>topic_number</b> of the model specified with <b>model_id</b>.</em>
                         <br>
                     </div>
                     <div class="list-group-item" style="color: #524f52; padding-left: 0px; padding-top: 5px; border: hidden;">
-                        <label class='required'><span class="orange">POST</span> /model/&lt;int: model_id&gt;/topic/&lt;int: topic_number&gt;</label>
+                        <label class='required'><span class="orange">POST&nbsp&nbsp&nbsp</span> /model/&lt;int: model_id&gt;/topic/&lt;int: topic_number&gt;</label>
                         <em style="color: #282828; font-size: smaller; font-weight: lighter;">Updates Topic specified with <b>topic_number</b> of the model specified with <b>model_id</b>. Sets <b>alias</b> and/or <b>action</b> attributes specified in JSON body <b>{"alias":"...", "action":"..."}</b> and returns updated Topic as JSON.</em>
                         <br>
                     </div>
   				</div>
+              	<h3 class="head_label">ADMIN:</h3>
+                <div class="list-group ">
+                    <div class="list-group-item" style="color: #524f52; padding-left: 0px; padding-top: 5px; border: hidden;">
+                        <label class='required'><span class="black">Edit Topic Web Page URL:&nbsp&nbsp&nbsp</span></label><a href="{{url_for('edit_topics', model_id=1)}}">/model/&lt;int: model_id&gt;/edit_topics</label>
+                        <em style="color: #282828; font-size: smaller; font-weight: lighter;">UI that allows looking into topic details and editing topic alias and action attributes.</em>
+                        <br>
+                    </div>
+  				</div>
+
             </div>
         </div>
     </div>
