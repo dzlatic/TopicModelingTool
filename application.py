@@ -74,8 +74,8 @@ from database_setup import Base, Model, Topic, Word, Inference, Distribution
 
 app = Flask(__name__)
 
-APPLICATION_PATH = "/var/www/TopicModelingTool/TopicModelingTool/"
-#  APPLICATION_PATH = "./"
+# APPLICATION_PATH = "/var/www/TopicModelingTool/TopicModelingTool/"
+APPLICATION_PATH = "./"
 
 DB_SECREATS_PATH = APPLICATION_PATH + "db_secrets.json"
 CLIENT_SECTRETS_PATH = APPLICATION_PATH + "client_secrets.json"
@@ -122,9 +122,6 @@ def sent_to_words(sentences):
 
 ## Remove Stopwords, Make Bigrams and Lemmatize
 # Define functions for stopwords, bigrams, trigrams and lemmatization
-
-
-
 
 
 def get_inference_distribution (name, text):
@@ -236,6 +233,46 @@ def post_model_inference(model_id):
             return jsonify(Error=message)
     else:
         message = "'Content-Type' must be 'text/plain;charset=UTF-8'"
+        return jsonify(Error=message)
+
+@app.route('/model/<int:model_id>/inference_json', methods=['POST'])
+def post_model_inference_json(model_id):
+    if request.headers['Content-Type'] == 'application/json':
+        try:
+            #db_session.autoflush = False
+            model = db_session.query(Model).filter_by(id=model_id).one()
+            try:
+                text = request.json["text"]
+            except KeyError:
+                #db_session.autoflush = True
+                message = "Invalid request body format."
+                return jsonify(Error=message)
+            inference = Inference(model_id=model_id, text=text)
+            db_session.add(inference)
+            db_session.commit()
+            topic_distribution = get_inference_distribution(model.name, text)
+            for topic_number, dist in topic_distribution[0]:
+                #db_session.autoflush = False
+                topic = db_session.query(Topic).filter_by(model_id=model_id, number=topic_number + 1).one() # +1 to harmonize with lyLDAviz
+                distribution = Distribution(model_id=model_id, inference_id=inference.id, rank=0, topic_number=topic.number, topic_alias=topic.alias, topic_action=topic.action, distribution=dist.astype(float))
+                #db_session.autoflush = True
+                db_session.add(distribution)
+                db_session.commit()
+            distributions = db_session.query(Distribution).filter_by(inference_id=inference.id, model_id=model_id).order_by(desc(Distribution.distribution), asc(Distribution.topic_number))
+            rank = 1
+            for distribution in distributions:
+                distribution.rank = rank
+                db_session.add(distribution)
+                rank += 1
+            db_session.commit()
+            #db_session.autoflush = True
+            return jsonify(Inference=[inference.serialize_all])
+        except orm_exc.NoResultFound:
+            #db_session.autoflush = True
+            message = "Model with id:{} doesn't exist.".format(model_id)
+            return jsonify(Error=message)
+    else:
+        message = "'Content-Type' must be 'application/json'"
         return jsonify(Error=message)
 
 @app.route('/model/<int:model_id>/inferences')
