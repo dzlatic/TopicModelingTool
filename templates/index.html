@@ -40,8 +40,13 @@
                         <br>
                     </div>
                     <div class="list-group-item" style="color: #524f52; padding-left: 0px; padding-top: 5px; border: hidden;">
-                        <label class='required'><span class="orange">POST&nbsp&nbsp&nbsp</span> /model/&lt;int: model_id&gt;/inference</label>
+                        <label class='required'><span class="orange">POST&nbsp&nbsp&nbsp</span> /model/&lt;int: model_id&gt;/inference_text</label>
                         <em style="color: #282828; font-size: smaller; font-weight: lighter;">Runs the inference operation using Model specified <b>model_id</b> over the text defined in body with <b> 'Content-Type' = 'text/plain;charset=UTF-8'</b>, saves the text and results into Inference object, that is then returned in JSON.</em>
+                        <br>
+                    </div>
+                    <div class="list-group-item" style="color: #524f52; padding-left: 0px; padding-top: 5px; border: hidden;">
+                        <label class='required'><span class="orange">POST&nbsp&nbsp&nbsp</span> /model/&lt;int: model_id&gt;/inference_json</label>
+                        <em style="color: #282828; font-size: smaller; font-weight: lighter;">Runs the inference operation using Model specified <b>model_id</b> over the text defined in JSON body <b>{"text":"..."}</b>, saves the text and results into Inference object, that is then returned in JSON.</em>
                         <br>
                     </div>
                     <div class="list-group-item" style="color: #524f52; padding-left: 0px; padding-top: 5px; border: hidden;">

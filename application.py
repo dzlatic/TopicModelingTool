@@ -195,8 +195,8 @@ def get_model_json(model_id):
         message = "Model with id:{} doesn't exist.".format(model_id)
         return jsonify(Error=message)
 
-@app.route('/model/<int:model_id>/inference', methods=['POST'])
-def post_model_inference(model_id):
+@app.route('/model/<int:model_id>/inference_text', methods=['POST'])
+def post_model_inference_text(model_id):
     if request.headers['Content-Type'] == 'text/plain;charset=UTF-8':
         try:
             #db_session.autoflush = False
