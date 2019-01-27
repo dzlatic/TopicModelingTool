@@ -1,4 +1,4 @@
-# Project: Topic Modeling Tool @ Cisco Libe Barcelona 2019 BRKCCT-2510
+# Project: Topic Modeling Tool @ Cisco Live Barcelona 2019 BRKCCT-2510
 #
 
 This project is contains three parts:
