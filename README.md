@@ -1,60 +1,39 @@
-# Project: Item Catalog @ Udacity Full Stack Nanodegree
-# "Catalog App" web application
+# Project: Topic Modeling Tool @ Cisco Libe Barcelona 2019 BRKCCT-2510
+#
 
-This project is a web application "Catalog App" in Flask that provides a
-general purpose catalog of items. Users can review catalog items without
-signing in. Users can also add new items, as well as edit and delete the
-items they have created upon sign-in in using Google OAuth.
+This project is contains three parts:
 
-Catalog is organized per categories of items. Before accessing data about
-items, users select the category. Categories are under control of web
-administrator only, so users cannot create, delete or change categories
-using "Catalog App" web application.
-
-To load new categories, or to initialize database, authorized user can edit
-and run teh file  /var/www/CatalogApp/CatalogApp/load_categories.py.
-
-Besides real categories, web users also have on their disposal two helper
-categories:
-
-"Latest Items" showing the last 10 items created in the application by
-all users, and
-
-"My Items" showing the list of items currently logged in user owns.
-
+1. Jyputer Notebook file "TopicModelingTool-BRKCCT-2510.ipynb" used for row data import
+and LDA model building 
+2. TopicModelingTool Web appliocation providing REST API and Admin for Topic model
+access
+3. Procedure for importing model developed and saved in Jyputer Notebook into 
+TopicModelingTool Web appliocation server - load-models.py.
 
 ## Deployment target on AWS:
-
 
 Ubuntu-1GB-Frankfurt-1;
 1 GB RAM, 1 vCPU, 40 GB SSD;
 Ubuntu 16.04;
 Frankfurt, Zone A (eu-central-1a)
 
-
-
 ## Summary of performed configuration tasks on top of VM provided by AWS:
 
-
-- Users "grader" has been created to be used for deployment review;
-- User "grader" is added to sudoers;
-- "sudo" password for "grader" it is the same as user name;
 - Configured Ubuntu firewall per spec below;
 - Installed missing packages per table below;
 - Updated & Upgraded system packages;
 - Updated AWS configuration to reflect te same ports opening as on Ubuntu;
 - Updated Google credentials with validated domain (used meta tag method).
 
-
 ## Deployment Details
 
 | Parameter | Value |
 | ------ | ------ |
-| IP Address of the server | 35.157.7.133 |
+| IP Address of the server | 3.121.213.222 |
 | SSH port | 2200 |
-| URL of the web application | http://35.157.7.133.xip.io/catalog |
-| Application: | /var/www/CatalogApp |
-| Apache/WSGI conf | /etc/apache2/sites-available/CatalogApp.conf |
+| URL of the web application home page | http://3.121.213.222.xip.io |
+| Application: | /var/www/TopicModelingTool |
+| Apache/WSGI conf | /etc/apache2/sites-available/TopicModelingTool.conf |
 
 
 ## Important Notes:
@@ -83,20 +62,8 @@ Please note that default SSH port is disabled! Validate configuration with comma
 
 - Added support for PostgreSQL;
 - Adjusted code so that new directory structure is considered;
-- Added new file "catalog.wsgi" on the level above project files;
+- Added new file "tiopicmodelingtool.wsgi" on the level above project files;
 - Adjusted paths to .json files with secrets.
-
-
-## Summary of Configuration tasks:
-
-- Users "grader" has been created to be used for deployment review;
-- User "grader" is added to sudoers;
-- "sudo" password for "grader" it is the same as user name;
-- Configured Ubuntu firewall;
-- Installed missing packages;
-- Updated & Upgraded system packages;
-- Updated AWS configuration to reflect te same ports opening as on Ubuntu;
-- Updated Google credentials with validated domain (used meta tag method).
 
 
 ## Files included in Git repository:
@@ -104,15 +71,11 @@ Please note that default SSH port is disabled! Validate configuration with comma
 | File | Comment |
 | ------ | ------ |
 | database_setup.py | application that creates database |
-| load_categories.py | application that loads categories into database |
+| load_models.py | application that loads model into database |
 | application.py | main application that runs Flask web server |
 | README.md | this file |
-| templates/main.html | main html template; all others extends this one  |
-| templates/catalog.html | catalog template, main app navigation page  |
-| templates/item.html | item template that shows catalog item  |
-| templates/newItem.html | template that allows creating new item  |
-| templates/editItem.html | template that allows edditing an item  |
-| templates/deleteItem.html | template that allows delleting an item  |
+| templates/index.html | home page, with REST definitions and links to admin page  |
+| templates/editTopics.html | admin page for model visualization and assigning aliases and actions to topics |
 | static/styles.css | CSS file, addition to Bootstrap invoked in main.html |
 | static/favicon.ico | Web app icon, required by browsers |
 
@@ -122,14 +85,14 @@ Please note that default SSH port is disabled! Validate configuration with comma
 
 | File | Comment |
 | ------ | ------ |
-| client_secrets.json | Google OAuth web app client secrets  |
+| client_secrets.json | web app client secrets  |
 | db_secrets.json | PostgreSQL database credentials   |
 
 ## Dependencies
 
 | Software | Version | Download |
 | ------ | ------ | ------ |
-| Python | Python 3.5.2 | [link](https://www.python.org/downloads/release/python-352/) |
+| Python | Python 3.6.6 | [link](https://www.python.org/downloads/release/python-368/) |
 | Flask | 1.0.2 | [link](http://flask.pocoo.org/docs/1.0/installation/) |
 | PostgreSQL | 9.5 | [link](https://www.postgresql.org/download/) |
 
