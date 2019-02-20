@@ -22,8 +22,7 @@ Frankfurt, Zone A (eu-central-1a)
 - Configured Ubuntu firewall per spec below;
 - Installed missing packages per table below;
 - Updated & Upgraded system packages;
-- Updated AWS configuration to reflect te same ports opening as on Ubuntu;
-- Updated Google credentials with validated domain (used meta tag method).
+- Updated AWS configuration to reflect te same ports opening as on Ubuntu.
 
 ## Deployment Details
 
